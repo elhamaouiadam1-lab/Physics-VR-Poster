@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Physics Accuracy in VR Simulations — MSE-VR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #f5f2ec;
+  --bg-card: #ffffff;
+  --bg-dark-card: #1a1614;
+  --text: #1a1614;
+  --text-muted: #6b5e52;
+  --accent: #8b2020;
+  --accent-warm: #c4602a;
+  --border: rgba(26,22,20,0.12);
+  --shadow: 0 2px 20px rgba(0,0,0,0.06);
+  --nav-bg: rgba(245,242,236,0.9);
+}
+
+[data-theme="dark"] {
+  --bg: #0f0d0c;
+  --bg-card: #1a1714;
+  --bg-dark-card: #0a0908;
+  --text: #e8e2d9;
+  --text-muted: #9a8e82;
+  --accent: #d4614a;
+  --accent-warm: #e07a40;
+  --border: rgba(232,226,217,0.1);
+  --shadow: 0 2px 20px rgba(0,0,0,0.3);
+  --nav-bg: rgba(15,13,12,0.92);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.65;
+  transition: background 0.4s, color 0.4s;
+  overflow-x: hidden;
+}
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: background 0.4s;
+}
+
+.nav-brand {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+.nav-links {
+  display: flex; align-items: center; gap: 2rem;
+  list-style: none;
+}
+
+.nav-links a {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover { color: var(--accent); }
+
+.theme-toggle {
+  background: none; border: 1px solid var(--border);
+  color: var(--text); cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; transition: all 0.2s;
+}
+
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+/* HERO */
+.hero {
+  padding: 10rem 2rem 6rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: end;
+}
+
+.hero-meta {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--accent);
+  display: block;
+}
+
+.hero-desc {
+  margin-top: 1.8rem;
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+  max-width: 480px;
+}
+
+.hero-info {
+  display: flex; flex-direction: column; gap: 1.2rem;
+  padding-left: 2rem;
+  border-left: 1px solid var(--border);
+}
+
+.info-block label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.info-block p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ABSTRACT BANNER */
+.abstract-band {
+  background: var(--text);
+  color: var(--bg);
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+}
+
+.abstract-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.abstract-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: var(--accent);
+  opacity: 0.8;
+}
+
+[data-theme="dark"] .abstract-band {
+  background: var(--bg-dark-card);
+  color: var(--text);
+}
+
+.abstract-text {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--bg);
+  max-width: 800px;
+}
+
+[data-theme="dark"] .abstract-text { color: var(--text); }
+
+.abstract-text strong {
+  color: var(--accent-warm);
+  font-weight: 500;
+}
+
+/* SECTIONS */
+.section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 5rem 2rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.section-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-left: auto;
+}
+
+.section-title {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 0.8rem;
+}
+
+.section-subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  max-width: 600px;
+}
+
+/* CARDS */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5px;
+  border: 1.5px solid var(--border);
+  margin-top: 2rem;
+}
+
+.card {
+  background: var(--bg-card);
+  padding: 2rem;
+  border: 1px solid var(--border);
+  transition: background 0.3s, transform 0.2s;
+  position: relative;
+}
+
+.card:hover { background: var(--bg); }
+[data-theme="dark"] .card:hover { background: #1f1b18; }
+
+.card-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.8rem;
+  display: block;
+}
+
+.card h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+  color: var(--text);
+}
+
+.card p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+/* PEDAGOGICAL RISKS */
+.risks-list {
+  display: flex; flex-direction: column; gap: 0;
+}
+
+.risk-item {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  gap: 1.5rem;
+  padding: 1.8rem 0;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+}
+
+.risk-num {
+  font-family: 'Fraunces', serif;
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: var(--border);
+  line-height: 1;
+  padding-top: 0.2rem;
+}
+
+.risk-content h4 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.risk-content p { font-size: 0.9rem; color: var(--text-muted); }
+
+/* POLICY OPTIONS */
+.policy-list { display: flex; flex-direction: column; gap: 1px; }
+
+.policy-item {
+  background: var(--bg-card);
+  padding: 1.8rem 2rem;
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  gap: 1.5rem;
+  align-items: start;
+  transition: background 0.2s;
+}
+
+.policy-item:hover { background: var(--bg); }
+[data-theme="dark"] .policy-item:hover { background: #1f1b18; }
+
+.policy-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.policy-item h4 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.policy-item p { font-size: 0.88rem; color: var(--text-muted); }
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-radius: 2px;
+}
+
+/* FRAMEWORK TIERS */
+.tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5px;
+  margin-top: 2rem;
+}
+
+.tier-card {
+  background: var(--bg-card);
+  padding: 2.5rem 2rem;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.tier-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--accent);
+}
+
+.tier-card:nth-child(2)::before { background: var(--accent-warm); }
+.tier-card:nth-child(3)::before { background: #7a6a5a; }
+
+.tier-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+.tier-card h3 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.tier-goal {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 1.2rem;
+}
+
+.tier-card p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.65; }
+
+.tier-standard {
+  margin-top: 1.5rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  background: var(--bg);
+}
+
+/* GUIDELINES */
+.guidelines-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5px;
+  margin-top: 2rem;
+}
+
+.guideline-item {
+  background: var(--bg-card);
+  padding: 1.8rem 2rem;
+  border: 1px solid var(--border);
+}
+
+.guideline-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+.guideline-item h4 {
+  font-family: 'Fraunces', serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.guideline-item p { font-size: 0.88rem; color: var(--text-muted); }
+
+/* EVALUATION */
+.eval-list { display: flex; flex-direction: column; gap: 1.5px; }
+
+.eval-item {
+  background: var(--bg-card);
+  padding: 1.5rem 2rem;
+  border: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.eval-item label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.eval-item p { font-size: 0.88rem; color: var(--text-muted); }
+
+/* TWO-COL SECTION */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+
+/* QUOTE HERO */
+.quote-section {
+  padding: 5rem 2rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.quote-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.quote-mark {
+  font-family: 'Fraunces', serif;
+  font-size: 5rem;
+  color: var(--border);
+  line-height: 0.5;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+blockquote {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(1.3rem, 2.5vw, 2rem);
+  font-style: italic;
+  font-weight: 300;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+blockquote em { color: var(--accent); font-style: normal; }
+blockquote strong { color: var(--accent-warm); font-style: normal; font-weight: 600; }
+
+/* CONCLUSION */
+.conclusion {
+  background: var(--text);
+  color: var(--bg);
+  padding: 5rem 2rem;
+}
+
+[data-theme="dark"] .conclusion {
+  background: var(--bg-dark-card);
+  color: var(--text);
+}
+
+.conclusion-inner {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.conclusion .section-label { color: var(--accent); }
+
+.conclusion h2 {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  font-weight: 600;
+  margin: 1rem 0 2rem;
+  color: var(--bg);
+  line-height: 1.2;
+}
+
+[data-theme="dark"] .conclusion h2 { color: var(--text); }
+
+.conclusion p {
+  font-size: 1rem;
+  color: var(--bg);
+  opacity: 0.8;
+  line-height: 1.8;
+}
+
+[data-theme="dark"] .conclusion p { color: var(--text); opacity: 0.8; }
+.conclusion p strong { color: var(--accent-warm); opacity: 1; font-weight: 500; }
+
+/* REFERENCES */
+.references {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+}
+
+.refs-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3rem;
+  align-items: start;
+}
+
+.refs-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 1.2rem;
+}
+
+.refs-list {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 2;
+}
+
+.refs-list em { font-style: italic; }
+
+.course-info {
+  text-align: right;
+}
+
+.course-code {
+  font-family: 'Fraunces', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.course-details {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  line-height: 2;
+}
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+footer span {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* BIG BG TEXT */
+.bg-text-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-word {
+  position: absolute;
+  font-family: 'Fraunces', serif;
+  font-size: 18vw;
+  font-weight: 700;
+  color: var(--accent);
+  opacity: 0.03;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+}
+
+/* ANIMATE ON SCROLL */
+.fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fade-up.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .hero { grid-template-columns: 1fr; gap: 2.5rem; padding: 7rem 1.5rem 4rem; }
+  .hero-info { padding-left: 0; border-left: none; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+  .abstract-inner { grid-template-columns: 1fr; }
+  .abstract-label { writing-mode: horizontal-tb; transform: none; }
+  .two-col { grid-template-columns: 1fr; gap: 2rem; }
+  .tiers-grid { grid-template-columns: 1fr; }
+  .guidelines-grid { grid-template-columns: 1fr; }
+  .refs-grid { grid-template-columns: 1fr; }
+  .course-info { text-align: left; }
+  .nav-links { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav>
+  <span class="nav-brand">PHY1400 · MSE-VR</span>
+  <ul class="nav-links">
+    <li><a href="#problem">Problem</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#policy">Policy</a></li>
+    <li><a href="#framework">Framework</a></li>
+    <li><a href="#guidelines">Guidelines</a></li>
+    <li><a href="#conclusion">Conclusion</a></li>
+  </ul>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">☀️</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <p class="hero-meta">PHY1400 · Conceptual Physics · School of Science &amp; Engineering</p>
+    <h1>Physics Accuracy in <em>VR Simulations</em></h1>
+    <p class="hero-desc">A data-driven policy approach for integrating immersive technologies in Moroccan science curricula — addressing the Fidelity Gap between game engine physics and scientific reality under Digital Morocco 2030.</p>
+  </div>
+  <div class="hero-info fade-up">
+    <div class="info-block">
+      <label>Lead Author</label>
+      <p>Soulaymane Alahiane</p>
+    </div>
+    <div class="info-block">
+      <label>Submitted To</label>
+      <p>Ministry of National Education<br>Ministry of Digital Transition<br>Kingdom of Morocco</p>
+    </div>
+    <div class="info-block">
+      <label>Institution</label>
+      <p>Al Akhawayn University<br>Ifrane, Morocco · Spring 2026</p>
+    </div>
+    <div class="info-block">
+      <label>Date</label>
+      <p>13 February 2026</p>
+    </div>
+  </div>
+</section>
+
+<!-- ABSTRACT -->
+<div class="abstract-band">
+  <div class="abstract-inner">
+    <span class="abstract-label">Abstract</span>
+    <p class="abstract-text">
+      Most educational VR applications are built on game engines optimised for visual throughput rather than physical accuracy, producing a <strong>Fidelity Gap</strong> between how realistic a simulation looks and how correct it actually is. Unchecked, this risks teaching students Aristotelian misconceptions, unsafe laboratory habits, and corrupted experimental data. This paper evaluates three regulatory pathways and recommends the <strong>Pedagogical Fidelity Framework (MSE-VR)</strong> — a tiered certification standard managed by the CNIPE that demands accuracy where it matters, permits helpful idealisation where it aids comprehension, and remains financially viable for all Moroccan schools.
+    </p>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section class="section bg-text-section" id="problem">
+  <div class="bg-word">GAP</div>
+  <div class="section-header">
+    <span class="section-label">The Problem</span>
+    <span class="section-num">§01</span>
+  </div>
+  <h2 class="section-title fade-up">The Fidelity Gap: Three Technical<br>Failures of Game Engine Physics</h2>
+  <p class="section-subtitle fade-up">Engines like Unity and Unreal maximise visual frame rate, not physical accuracy. Their computational shortcuts accumulate into three distinct categories of scientific failure with direct pedagogical consequences.</p>
+
+  <div class="card-grid" style="margin-top: 3rem;">
+    <div class="card fade-up">
+      <span class="card-num">Technical Failure 01</span>
+      <h3>Energy Leak — Integration Error</h3>
+      <p>Standard Semi-Implicit Euler integration updates position from old velocity each frame. Accumulated rounding error in oscillating systems causes energy to grow spontaneously — a virtual pendulum swings progressively higher, violating Conservation of Energy without any external input.</p>
+    </div>
+    <div class="card fade-up">
+      <span class="card-num">Technical Failure 02</span>
+      <h3>Tunneling Effect</h3>
+      <p>High-velocity objects traverse so much distance per frame that collision detection misses the boundary. Projectiles, electrons, and fast-moving particles teleport through solid barriers — directly contradicting what students are meant to learn about material physics and boundary conditions.</p>
+    </div>
+    <div class="card fade-up">
+      <span class="card-num">Technical Failure 03</span>
+      <h3>Optical Distortion &amp; Fluid Fakes</h3>
+      <p>VR lens pincushion distortion curves straight laser beams; chromatic aberration blurs measurement lines. Water rendering is a pure cosmetic shader — lacking diffraction, interference, or wave propagation — adding cognitive load with zero scientific content.</p>
+    </div>
+  </div>
+</section>
+
+<!-- RISKS -->
+<section class="section" id="risks" style="padding-top: 0;">
+  <div class="two-col">
+    <div>
+      <div class="section-header">
+        <span class="section-label">Pedagogical Risks</span>
+        <span class="section-num">§02</span>
+      </div>
+      <div class="risks-list fade-up">
+        <div class="risk-item">
+          <span class="risk-num">1</span>
+          <div class="risk-content">
+            <h4>Negative Transfer</h4>
+            <p>Students trained on weightless VR controllers mishandle real equipment — a 100 kg virtual mass is indistinguishable from 1 kg. Unsafe habits carry directly into physical laboratories.</p>
+          </div>
+        </div>
+        <div class="risk-item">
+          <span class="risk-num">2</span>
+          <div class="risk-content">
+            <h4>Misconception Reinforcement</h4>
+            <p>Default linear-damping algorithms decelerate all virtual objects. Students observe motion decay in a vacuum and conclude "motion requires force" — actively teaching the Aristotelian fallacy Newton disproved.</p>
+          </div>
+        </div>
+        <div class="risk-item">
+          <span class="risk-num">3</span>
+          <div class="risk-content">
+            <h4>Cognitive Overload</h4>
+            <p>Photorealistic textures and particle effects that lack scientific function consume working memory, diverting attention from the core physics learning objective.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- POLICY OPTIONS -->
+    <div>
+      <div class="section-header">
+        <span class="section-label">Policy Options Evaluated</span>
+        <span class="section-num">§03</span>
+      </div>
+      <div class="policy-list fade-up">
+        <div class="policy-item">
+          <span class="policy-num">1</span>
+          <div>
+            <h4>Laissez-Faire — Market-Driven</h4>
+            <p>Unrestricted app-store adoption. Fast and inexpensive with zero vetting. High risk of gamified misconceptions and negative transfer across all school types.</p>
+          </div>
+          <div></div>
+        </div>
+        <div class="policy-item">
+          <span class="policy-num">2</span>
+          <div>
+            <h4>Scientific Realism Mandate</h4>
+            <p>Require NASA-grade accuracy (&lt;1% error, full fluid dynamics). Eliminates errors but demands expensive PC-VR hardware inaccessible to rural schools.</p>
+          </div>
+          <div></div>
+        </div>
+        <div class="policy-item">
+          <span class="policy-num">3</span>
+          <div>
+            <h4>Pedagogical Fidelity Framework</h4>
+            <p>Tiered certification judging software by its learning objective — rigour for data collection, helpful idealisation for concepts. Practical and cost-viable nationally.</p>
+          </div>
+          <span class="badge">Recommended</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FRAMEWORK -->
+<section class="section" id="framework">
+  <div class="section-header">
+    <span class="section-label">The Moroccan Standard for Educational VR (MSE-VR) — Three-Tier Framework</span>
+    <span class="section-num">§04</span>
+  </div>
+  <div class="tiers-grid fade-up">
+    <div class="tier-card">
+      <span class="tier-label">Tier I · Concept Builder</span>
+      <h3>Abstract Validation</h3>
+      <p class="tier-goal">Goal: Teaching Laws &amp; Principles</p>
+      <p>Simplifications such as zero friction or idealised point-masses are permitted to isolate variables. The underlying mathematics must remain internally consistent — auto-damping and engine shortcuts must be disabled so objects behave predictably, even if not realistically.</p>
+      <div class="tier-standard">Standard: Consistent Idealisation</div>
+    </div>
+    <div class="tier-card">
+      <span class="tier-label">Tier II · Virtual Lab</span>
+      <h3>Empirical Validation</h3>
+      <p class="tier-goal">Goal: Data Collection &amp; Measurement</p>
+      <p>Strict predictive accuracy required. Simulations must use high-precision Runge-Kutta RK4 integrators and Continuous Collision Detection (CCD). Generated experimental data must match real-world results within a <strong>5% margin of error</strong>. No tunneling permitted.</p>
+      <div class="tier-standard">Standard: ±5% Error / RK4 + CCD Mandatory</div>
+    </div>
+    <div class="tier-card">
+      <span class="tier-label">Tier III · Immersive Experience</span>
+      <h3>Phenomenological Validation</h3>
+      <p class="tier-goal">Goal: Field Simulations &amp; Exploration</p>
+      <p>Visual immersion and presence take precedence — experiences like walking on Mars prioritise the phenomenological sensation. Scientific accuracy is secondary, but every simulation must pass a structured <strong>Negative Transfer safety audit</strong> before deployment.</p>
+      <div class="tier-standard">Standard: Plausibility + Safety Audit</div>
+    </div>
+  </div>
+</section>
+
+<!-- GUIDELINES + EVALUATION -->
+<section class="section" id="guidelines" style="padding-top: 0;">
+  <div class="two-col">
+    <div>
+      <div class="section-header">
+        <span class="section-label">Developer Implementation Guidelines</span>
+        <span class="section-num">§05</span>
+      </div>
+      <div class="guidelines-grid fade-up">
+        <div class="guideline-item">
+          <span class="guideline-num">Guideline 01</span>
+          <h4>Disable Default Linear Damping</h4>
+          <p>Remove auto-drag from vacuum simulations to prevent Aristotelian artifacts — objects must not decelerate without explicit applied forces.</p>
+        </div>
+        <div class="guideline-item">
+          <span class="guideline-num">Guideline 02</span>
+          <h4>Adopt RK4 Integration</h4>
+          <p>Replace Euler loops with Runge-Kutta 4 for all oscillating and orbital systems to conserve energy correctly across simulation frames.</p>
+        </div>
+        <div class="guideline-item">
+          <span class="guideline-num">Guideline 03</span>
+          <h4>Enable Continuous Collision Detection</h4>
+          <p>CCD is mandatory for all Tier II projectile and high-velocity particle experiments to eliminate tunneling through solid boundaries.</p>
+        </div>
+        <div class="guideline-item">
+          <span class="guideline-num">Guideline 04</span>
+          <h4>Visual Cues over Photorealism (Tier I)</h4>
+          <p>Use schematic textures, labelled force vectors, and stripped-back palettes in conceptual apps to reduce cognitive load.</p>
+        </div>
+        <div class="guideline-item">
+          <span class="guideline-num">Guideline 05</span>
+          <h4>Lens Distortion Correction</h4>
+          <p>Full pincushion and chromatic aberration correction required wherever students measure vectors, angles, or distances in VR experiments.</p>
+        </div>
+        <div class="guideline-item">
+          <span class="guideline-num">Guideline 06</span>
+          <h4>Haptic Safety Calibration (Tier III)</h4>
+          <p>Mass representation must include resistance cues or visual mass labels so students do not develop unsafe handling assumptions for heavy equipment.</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-header">
+        <span class="section-label">Evaluation &amp; Monitoring</span>
+        <span class="section-num">§06</span>
+      </div>
+      <div class="eval-list fade-up">
+        <div class="eval-item">
+          <label>Accuracy Check</label>
+          <p>Random sampling of Tier II apps ensures generated data matches textbook physics within the 5% threshold. Non-compliant apps are de-certified by CNIPE.</p>
+        </div>
+        <div class="eval-item">
+          <label>Teacher Feedback Surveys</label>
+          <p>Periodic surveys of physics instructors capture reports of student "video-game habits" or persistent conceptual misconceptions traceable to specific VR tools.</p>
+        </div>
+        <div class="eval-item">
+          <label>Safety &amp; Alignment Audit</label>
+          <p>Review ensures no dangerous mass-handling habits are instilled, and confirms alignment with Programme GENIE for equitable nationwide deployment.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUOTE -->
+<div class="quote-section">
+  <div class="quote-inner">
+    <span class="quote-mark">"</span>
+    <blockquote>
+      We do not need VR to be a perfect replica of <em>reality</em> — we need it to be a perfect replica of the <strong>learning objective</strong>.
+    </blockquote>
+  </div>
+</div>
+
+<!-- CONCLUSION -->
+<div class="conclusion" id="conclusion">
+  <div class="conclusion-inner fade-up">
+    <span class="section-label">Conclusion</span>
+    <h2>Protecting Scientific Truth Without Breaking the Budget</h2>
+    <p>
+      The Fidelity Gap is not merely a technical quirk — it is an educational hazard. Adopting the <strong>Pedagogical Fidelity Framework</strong> equips Morocco's Ministry with a practical, evidence-based instrument that protects scientific truth, prevents real-world harm from negative transfer, and delivers the cost-sustainability required for equitable rollout under <strong>Digital Morocco 2030</strong>. We do not need VR to be a perfect copy of reality; we need it to be a perfect tool for the learning objective.
+    </p>
+  </div>
+</div>
+
+<!-- REFERENCES & FOOTER -->
+<div class="references">
+  <div class="refs-grid">
+    <div>
+      <p class="refs-label">Selected References</p>
+      <div class="refs-list">
+        Chou &amp; Chan (2021). The impact of realistic physics in VR on learning outcomes. <em>Computers &amp; Education</em>, 164.<br>
+        Dede, C. (2009). Immersive interfaces for engagement and learning. <em>Science</em>, 323(5910).<br>
+        Di Natale et al. (2020). Immersive VR in K–12 and higher education: a 10-year review. <em>British J. Educational Technology</em>, 51(6).<br>
+        Finkelstein et al. (2005). When learning about the real world is better done virtually. <em>Phys. Rev. ST-PER</em>, 1(1).<br>
+        Makransky et al. (2019). Adding immersive VR to a science lab simulation. <em>Learning &amp; Instruction</em>, 60.<br>
+        Slater &amp; Sanchez-Vives (2016). <em>Frontiers in Robotics &amp; AI</em>, 3.<br>
+        Sweller et al. (2011). <em>Cognitive Load Theory</em>. Springer.
+      </div>
+    </div>
+    <div class="course-info">
+      <span class="course-code">PHY 1400</span>
+      <div class="course-details">
+        Al Akhawayn University · Ifrane<br>
+        Spring 2026<br>
+        Lead: Soulaymane Alahiane<br>
+        MSE-VR · CNIPE Framework
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>© 2026 Soulaymane Alahiane · Al Akhawayn University</span>
+  <span>PHY1400 · MSE-VR Policy Paper</span>
+</footer>
+
+<script>
+// Theme toggle
+const toggle = document.getElementById('themeToggle');
+const html = document.documentElement;
+let dark = false;
+
+// Detect system preference
+if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  dark = true;
+  html.setAttribute('data-theme', 'dark');
+  toggle.textContent = '🌙';
+}
+
+toggle.addEventListener('click', () => {
+  dark = !dark;
+  html.setAttribute('data-theme', dark ? 'dark' : 'light');
+  toggle.textContent = dark ? '🌙' : '☀️';
+});
+
+// Scroll animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => entry.target.classList.add('visible'), i * 60);
+    }
+  });
+}, { threshold: 0.08 });
+
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
